@@ -11,19 +11,134 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Extract, Fix Syntax & Setup
+      - name: Extract & Auto-Inject Unity Ads Engine
         run: |
           unzip -q -o AndroidIDEProjects.zip
           GRADLE_PATH=$(find . -name "gradlew" | head -n 1)
           PROJECT_DIR=$(dirname "$GRADLE_PATH")
           echo "PROJECT_DIR=$PROJECT_DIR" >> $GITHUB_ENV
           cd "$PROJECT_DIR"
-          
-          # MainActivity.java-এর শেষ লাইনের 'কে' টাইপো অটো-ফিক্স
+
           JAVA_FILE="app/src/main/java/com/devtanvir/dailydiamondbd/MainActivity.java"
-          if [ -f "$JAVA_FILE" ]; then
-            sed -i 's/} কে/}/g' "$JAVA_FILE"
-          fi
+          
+          cat << 'EOF' > "$JAVA_FILE"
+          package com.devtanvir.dailydiamondbd;
+
+          import android.os.Bundle;
+          import android.webkit.JavascriptInterface;
+          import android.webkit.WebSettings;
+          import android.webkit.WebView;
+          import android.webkit.WebViewClient;
+          import android.widget.Toast;
+          import androidx.appcompat.app.AppCompatActivity;
+
+          import com.unity3d.ads.IUnityAdsInitializationListener;
+          import com.unity3d.ads.IUnityAdsLoadListener;
+          import com.unity3d.ads.IUnityAdsShowListener;
+          import com.unity3d.ads.UnityAds;
+          import com.unity3d.ads.UnityAdsShowOptions;
+
+          public class MainActivity extends AppCompatActivity {
+
+              private WebView webview1;
+              private final String GAME_ID = "800397660";
+              private final boolean TEST_MODE = true;
+              private final String INTERSTITIAL_ID = "BP_Interstitial_Android";
+              private final String REWARDED_ID = "BP_Rewarded_Android";
+
+              @Override
+              protected void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  setContentView(R.layout.activity_main);
+
+                  webview1 = findViewById(R.id.webview1);
+                  WebSettings settings = webview1.getSettings();
+                  settings.setJavaScriptEnabled(true);
+                  settings.setDomStorageEnabled(true);
+                  settings.setDatabaseEnabled(true);
+                  webview1.setWebViewClient(new WebViewClient());
+
+                  UnityAds.initialize(getApplicationContext(), GAME_ID, TEST_MODE, new IUnityAdsInitializationListener() {
+                      @Override
+                      public void onInitializationComplete() {
+                          runOnUiThread(() -> {
+                              Toast.makeText(MainActivity.this, "Unity Ads প্রস্তুত হচ্ছে...", Toast.LENGTH_SHORT).show();
+                              loadAllAds();
+                          });
+                      }
+
+                      @Override
+                      public void onInitializationFailed(UnityAds.UnityAdsInitializationError error, String message) {
+                          runOnUiThread(() -> Toast.makeText(MainActivity.this, "Unity Init ত্রুটি: " + message, Toast.LENGTH_LONG).show());
+                      }
+                  });
+
+                  webview1.addJavascriptInterface(new Object() {
+
+                      @JavascriptInterface
+                      public void showUnityInterstitial() {
+                          runOnUiThread(() -> {
+                              UnityAds.show(MainActivity.this, INTERSTITIAL_ID, new UnityAdsShowOptions(), new IUnityAdsShowListener() {
+                                  @Override
+                                  public void onUnityAdsShowComplete(String placementId, UnityAds.UnityAdsShowCompletionState state) {
+                                      loadAd(INTERSTITIAL_ID);
+                                  }
+                                  @Override
+                                  public void onUnityAdsShowFailure(String placementId, UnityAds.UnityAdsShowError error, String message) {
+                                      Toast.makeText(MainActivity.this, "ইন্টারস্টিশিয়াল প্রস্তুত নেই, পুনরায় লোড হচ্ছে", Toast.LENGTH_SHORT).show();
+                                      loadAd(INTERSTITIAL_ID);
+                                  }
+                                  @Override
+                                  public void onUnityAdsShowStart(String placementId) {}
+                                  @Override
+                                  public void onUnityAdsShowClick(String placementId) {}
+                              });
+                          });
+                      }
+
+                      @JavascriptInterface
+                      public void showUnityRewarded() {
+                          runOnUiThread(() -> {
+                              UnityAds.show(MainActivity.this, REWARDED_ID, new UnityAdsShowOptions(), new IUnityAdsShowListener() {
+                                  @Override
+                                  public void onUnityAdsShowComplete(String placementId, UnityAds.UnityAdsShowCompletionState state) {
+                                      if (state == UnityAds.UnityAdsShowCompletionState.COMPLETED) {
+                                          webview1.post(() -> webview1.evaluateJavascript("if(window.onAdRewardedSuccess){window.onAdRewardedSuccess();}", null));
+                                      }
+                                      loadAd(REWARDED_ID);
+                                  }
+                                  @Override
+                                  public void onUnityAdsShowFailure(String placementId, UnityAds.UnityAdsShowError error, String message) {
+                                      Toast.makeText(MainActivity.this, "ভিডিও বিজ্ঞাপন প্রস্তুত নেই, পুনরায় লোড হচ্ছে", Toast.LENGTH_SHORT).show();
+                                      loadAd(REWARDED_ID);
+                                  }
+                                  @Override
+                                  public void onUnityAdsShowStart(String placementId) {}
+                                  @Override
+                                  public void onUnityAdsShowClick(String placementId) {}
+                              });
+                          });
+                      }
+                  }, "AndroidBridge");
+
+                  webview1.loadUrl("https://dailydiamondbd.netlify.app");
+              }
+
+              private void loadAllAds() {
+                  loadAd(INTERSTITIAL_ID);
+                  loadAd(REWARDED_ID);
+              }
+
+              private void loadAd(String placementId) {
+                  UnityAds.load(placementId, new IUnityAdsLoadListener() {
+                      @Override
+                      public void onComplete(String placementId) {}
+                      @Override
+                      public void onFailed(String placementId, UnityAds.UnityAdsLoadError error, String message) {}
+                  });
+              }
+          }
+          EOF
 
           chmod +x gradlew
 
