@@ -11,13 +11,20 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Extract and Setup
+      - name: Extract, Fix Syntax & Setup
         run: |
           unzip -q -o AndroidIDEProjects.zip
           GRADLE_PATH=$(find . -name "gradlew" | head -n 1)
           PROJECT_DIR=$(dirname "$GRADLE_PATH")
           echo "PROJECT_DIR=$PROJECT_DIR" >> $GITHUB_ENV
           cd "$PROJECT_DIR"
+          
+          # MainActivity.java-এর শেষ লাইনের 'কে' টাইপো অটো-ফিক্স
+          JAVA_FILE="app/src/main/java/com/devtanvir/dailydiamondbd/MainActivity.java"
+          if [ -f "$JAVA_FILE" ]; then
+            sed -i 's/} কে/}/g' "$JAVA_FILE"
+          fi
+
           chmod +x gradlew
 
       - name: Set up Java 17
@@ -36,4 +43,3 @@ jobs:
         with:
           name: DailyDiamondBD-UnityAds-APK
           path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/*.apk
-          
