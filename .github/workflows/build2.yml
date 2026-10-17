@@ -43,8 +43,8 @@ jobs:
               private WebView webview;
               private final String GAME_ID = "800397660";
               private final boolean TEST_MODE = true;
-              private final String INTERSTITIAL_ID = "BP_Interstitial_Android";
-              private final String REWARDED_ID = "BP_Rewarded_Android";
+              private final String INTERSTITIAL_ID = "Interstitial_Android";
+              private final String REWARDED_ID = "Rewarded_Android";
 
               @Override
               protected void onCreate(Bundle savedInstanceState) {
@@ -135,7 +135,7 @@ jobs:
 
                       @Override
                       public void onUnityAdsFailedToLoad(String pId, UnityAds.UnityAdsLoadError error, String message) {
-                          runOnUiThread(() -> Toast.makeText(MainActivity.this, "Ad Failed: " + message, Toast.LENGTH_LONG).show());
+                          runOnUiThread(() -> Toast.makeText(MainActivity.this, "Ad Failed (" + pId + "): " + message, Toast.LENGTH_LONG).show());
                       }
                   });
               }
