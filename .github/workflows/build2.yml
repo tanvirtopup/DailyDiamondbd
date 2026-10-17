@@ -64,14 +64,14 @@ jobs:
                       @Override
                       public void onInitializationComplete() {
                           runOnUiThread(() -> {
-                              Toast.makeText(MainActivity.this, "Unity Ads প্রস্তুত হচ্ছে...", Toast.LENGTH_SHORT).show();
+                              Toast.makeText(MainActivity.this, "Unity সংযুক্ত হয়েছে, অ্যাড আনা হচ্ছে...", Toast.LENGTH_SHORT).show();
                               loadAllAds();
                           });
                       }
 
                       @Override
                       public void onInitializationFailed(UnityAds.UnityAdsInitializationError error, String message) {
-                          runOnUiThread(() -> Toast.makeText(MainActivity.this, "Init Error: " + message, Toast.LENGTH_LONG).show());
+                          runOnUiThread(() -> Toast.makeText(MainActivity.this, "Init ব্যর্থ: " + message, Toast.LENGTH_LONG).show());
                       }
                   });
 
@@ -87,7 +87,7 @@ jobs:
                                   }
                                   @Override
                                   public void onUnityAdsShowFailure(String placementId, UnityAds.UnityAdsShowError error, String message) {
-                                      Toast.makeText(MainActivity.this, "বিজ্ঞাপন প্রস্তুত নেই", Toast.LENGTH_SHORT).show();
+                                      Toast.makeText(MainActivity.this, "ইন্টারস্টিশিয়াল শো এরর: " + message, Toast.LENGTH_SHORT).show();
                                       loadAd(INTERSTITIAL_ID);
                                   }
                                   @Override
@@ -111,7 +111,7 @@ jobs:
                                   }
                                   @Override
                                   public void onUnityAdsShowFailure(String placementId, UnityAds.UnityAdsShowError error, String message) {
-                                      Toast.makeText(MainActivity.this, "ভিডিও বিজ্ঞাপন প্রস্তুত নেই", Toast.LENGTH_SHORT).show();
+                                      Toast.makeText(MainActivity.this, "ভিডিও শো এরর: " + message, Toast.LENGTH_SHORT).show();
                                       loadAd(REWARDED_ID);
                                   }
                                   @Override
@@ -134,10 +134,14 @@ jobs:
               private void loadAd(String placementId) {
                   UnityAds.load(placementId, new UnityAdsLoadOptions(), new IUnityAdsLoadListener() {
                       @Override
-                      public void onUnityAdsAdLoaded(String placementId) {}
+                      public void onUnityAdsAdLoaded(String placementId) {
+                          runOnUiThread(() -> Toast.makeText(MainActivity.this, "অ্যাড প্রস্তুত: " + placementId, Toast.LENGTH_SHORT).show());
+                      }
 
                       @Override
-                      public void onUnityAdsFailedToLoad(String placementId, UnityAds.UnityAdsLoadError error, String message) {}
+                      public void onUnityAdsFailedToLoad(String placementId, UnityAds.UnityAdsLoadError error, String message) {
+                          runOnUiThread(() -> Toast.makeText(MainActivity.this, "লোড ব্যর্থ (" + placementId + "): " + message, Toast.LENGTH_LONG).show());
+                      }
                   });
               }
           }
@@ -161,3 +165,4 @@ jobs:
         with:
           name: DailyDiamondBD-UnityAds-APK
           path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/*.apk
+          
