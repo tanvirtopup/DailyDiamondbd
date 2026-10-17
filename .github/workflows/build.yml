@@ -1,0 +1,47 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Unzip Project
+        run: |
+          unzip AndroidIDEProjects.zip
+          # যদি জিপের ভেতর DAILYDIAMONDBD ফোল্ডার থাকে তবে ফাইলগুলো বাইরে আনা
+          if [ -d "DAILYDIAMONDBD" ]; then
+            cp -r DAILYDIAMONDBD/* .
+          elif [ -d "AndroidIDEProjects/DAILYDIAMONDBD" ]; then
+            cp -r AndroidIDEProjects/DAILYDIAMONDBD/* .
+          fi
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Accept Licenses
+        run: yes | sdkmanager --licenses || true
+
+      - name: Grant Execute Permission
+        run: chmod +x gradlew || true
+
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: DailyDiamondBD-UnityAds-APK
+          path: app/build/outputs/apk/debug/*.apk
+        
